@@ -1,50 +1,89 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, FlatList, StyleSheet, Dimensions, ScrollView, TextInput } from 'react-native';
-
-const width = Dimensions.get('window').width
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, Dimensions, StatusBar, Switch } from 'react-native';
 
 import FontAwesome from 'react-native-vector-icons/FontAwesome'
 
+const width = Dimensions.get('window').width
+var listValRef;
+var listHistRef;
+
 export default function App() {
-
-
 
   const [digito, setDigito] = useState([])
   const [ultimo, setUltimo] = useState('')
   const [parcelas, setParcelas] = useState([]) // Todos os valores digitados para soma
   const [historico, setHistorico] = useState([])
 
+
+  const [dark, setDark] = useState(false)
+  const [thema, setThema] = useState({
+    backgroundColor: "#fff",
+    efeito: "#fafafa",
+    color: '#222',
+    especial: 'orange'
+  })
+  const toggleSwitch = () => setDark(previousState => !previousState);
+
+
   useEffect(() => {
-    // Pega caractere digitado 
-    // monta o numero
-    // e envia para o ultimo numero montado
-    setUltimo(digito.join(''))
+    if (dark) {
+      setThema({
+        backgroundColor: "#222",
+        efeito: "#f1f1f1",
+        color: '#fff',
+        especial: '#FF8C00'
+      })
+    } else {
+      setThema({
+        backgroundColor: "#fff",
+        efeito: "#fafafa",
+        color: '#222',
+        especial: '#FF6347'
+      })
+    }
+  }, [dark])
+
+  useEffect(() => {
     downButtonHandler()
 
+  })
 
+  useEffect(() => {
+    setUltimo(digito.join(''))
+    
   }, [digito])
-
+  
+  function apagarDigito() {
+    digito.splice(-1, 1);
+    // const corte2 = digito.pop()
+    // const corte = digito.toString().substring(0, digito.length - 1)
+    // setDigito(meuPeixe)
+  }
+  
   function montaParcelas() {
     if (ultimo != '') {
-
       setParcelas(parcelas => [...parcelas, parseFloat(ultimo).toFixed(2)])
       setUltimo("")
       setDigito([])
     }
   }
 
-  let listViewRef;
-  
+
   const downButtonHandler = () => {
-    listViewRef.scrollToEnd({ animated: true });
+    listValRef.scrollToEnd({ animated: true });
+    listHistRef.scrollToEnd({ animated: true });
   };
 
   function Registrar() {
+
     if (digito.length == 0 && parcelas.length == 0) {
       return
     }
 
-    let dataAtual = new Date().toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo" });
+    let time = {
+      data: new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }),
+      hora: new Date().toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo" })
+    }
 
     let soma = 0
     for (let i = 0; i < parcelas.length; i++) {
@@ -53,38 +92,39 @@ export default function App() {
 
     setHistorico(historico => [...historico, {
       soma: parcelas.length > 0 ? soma : parseFloat(ultimo),
-      dataAtual,
+      time,
       parcelas
     }])
 
-    
+
     setParcelas([])
     setUltimo('')
     setDigito([])
+
   }
 
   function Historico({ data, index }) {
     return (
+
+
+
       <TouchableOpacity
         style={{
-          paddingHorizontal: 20,
           flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start'
         }}
         onPress={() => { }}>
 
-        <Text style={{ fontSize: 12, color: '#aaa', marginTop: 5 }}>{data.dataAtual}</Text>
 
-        <View style={{ alignItems: 'flex-end' }}>
 
+        <View>
+
+          <Text style={{ fontSize: 12, color: '#ccc', marginTop: 5 }}>{data.time.data.slice(0, 5)} - {data.time.hora.slice(0, 5)}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
             <Text style={{
-              marginLeft: 5,
               fontSize: 20,
-              fontWeight: '600',
-              color: '#222'
-
+              fontWeight: '500',
+              color: thema.color,
+              marginBottom: 10
             }}>{data.soma?.toFixed(2).replace('.', ',')}</Text>
           </View>
 
@@ -92,10 +132,10 @@ export default function App() {
 
           <FlatList
             horizontal
-            ItemSeparatorComponent={<Text> + </Text>}
+            ItemSeparatorComponent={<Text style={{ color: '#ccc' }}> + </Text>}
             data={data.parcelas}
             renderItem={({ item }) => {
-              return <Text>{item}</Text>
+              return <Text style={{ color: '#ccc' }}>{item}</Text>
             }}
           />
         </View>
@@ -106,18 +146,39 @@ export default function App() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: thema.backgroundColor }]}>
 
+      <StatusBar barStyle={!dark ? 'dark-content' : 'light-content'} backgroundColor={thema.backgroundColor} />
 
       {/* ----------------- Monitor ------------------- */}
 
 
       <View style={styles.monitor}>
 
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+
+          <Text style={{ color: thema.color, paddingHorizontal: 20, marginTop: 20, marginBottom: 10 }}>HISTORICO</Text>
+
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={{ color: dark ? '#fff' : '#222', fontSize: 16, marginRight: 10 }}>{dark ? 'Escuro' : 'Claro'}</Text>
+            <Switch
+              trackColor={{ false: '#aaa', true: '#aaa' }}
+              thumbColor={dark ? '#fff' : '#fff'}
+              onValueChange={toggleSwitch}
+              value={dark}
+            />
+          </View>
+        </View>
+
+
 
         <FlatList
+
+          showsHorizontalScrollIndicator={false}
+          style={{ marginHorizontal: 20 }}
+          horizontal
           ref={(ref) => {
-            listViewRef = ref;
+            listHistRef = ref;
           }}
           data={historico}
           renderItem={({ item, index }) => <Historico data={item} index={index} />}
@@ -126,7 +187,31 @@ export default function App() {
           />}
         />
 
-        <Text style={styles.digito}>{digito.length == 0 ? '0' : digito}</Text>
+
+
+        <View style={styles.tec_topo}>
+
+          <FlatList
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            ref={(ref) => {
+              listValRef = ref;
+            }}
+            data={parcelas}
+            ItemSeparatorComponent={() => (<Text style={{ alignSelf: 'center', color: thema.color }}>+</Text>)}
+            renderItem={({ item }) => {
+              return (
+                <TouchableOpacity style={styles.flat_historico_itens}>
+                  <Text style={[styles.valor_historico_item, { color: thema.color }]}>{item}</Text>
+                </TouchableOpacity>
+              )
+
+            }}
+          />
+          <Text style={[styles.digito, { color: thema.color }]}>{digito.length == 0 ? '0' : digito}</Text>
+
+
+        </View>
 
       </View>
 
@@ -134,27 +219,10 @@ export default function App() {
       {/* ----------------- Teclado ------------------- */}
 
 
-      <View style={styles.area_teclado}>
-        <View style={styles.tec_topo}>
-
-          <FlatList
-            horizontal
-            data={parcelas}
-            ItemSeparatorComponent={() => (<Text>+</Text>)}
-            renderItem={({ item }) => {
-              return (
-                <TouchableOpacity style={styles.flat_historico_itens}>
-                  <Text style={styles.valor_historico_item}>{item}</Text>
-                </TouchableOpacity>
-              )
-
-            }}
-          />
+      <View style={[styles.area_teclado, { backgroundColor: thema.backgroundColor }]}>
 
 
-        </View>
-
-        <View style={styles.teclado}>
+        <View style={[styles.teclado, { backgroundColor: thema.backgroundColor }]}>
 
           <View style={{ flex: 3 }}>
 
@@ -162,25 +230,25 @@ export default function App() {
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 7])}
                 activeOpacity={.8}
-                style={styles.btn}>
+                style={[styles.btn, { backgroundColor: dark ? '#222' : '#fff' }]}>
 
-                <Text style={styles.txt_btn}>7</Text>
+                <Text style={[[styles.txt_btn, { color: thema.color }], { color: thema.color }]}>7</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 8])}
                 activeOpacity={.8}
-                style={styles.btn}>
+                style={[styles.btn, { backgroundColor: dark ? '#222' : '#fff' }]}>
 
-                <Text style={styles.txt_btn}>8</Text>
+                <Text style={[styles.txt_btn, { color: thema.color }]}>8</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 9])}
                 activeOpacity={.8}
-                style={styles.btn}>
+                style={[styles.btn, { backgroundColor: dark ? '#222' : '#fff' }]}>
 
-                <Text style={styles.txt_btn}>9</Text>
+                <Text style={[styles.txt_btn, { color: thema.color }]}>9</Text>
               </TouchableOpacity>
 
             </View>
@@ -189,25 +257,25 @@ export default function App() {
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 4])}
                 activeOpacity={.8}
-                style={styles.btn}>
+                style={[styles.btn, { backgroundColor: dark ? '#222' : '#fff' }]}>
 
-                <Text style={styles.txt_btn}>4</Text>
+                <Text style={[styles.txt_btn, { color: thema.color }]}>4</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 5])}
                 activeOpacity={.8}
-                style={styles.btn}>
+                style={[styles.btn, { backgroundColor: dark ? '#222' : '#fff' }]}>
 
-                <Text style={styles.txt_btn}>5</Text>
+                <Text style={[styles.txt_btn, { color: thema.color }]}>5</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 6])}
                 activeOpacity={.8}
-                style={styles.btn}>
+                style={[styles.btn, { backgroundColor: dark ? '#222' : '#fff' }]}>
 
-                <Text style={styles.txt_btn}>6</Text>
+                <Text style={[styles.txt_btn, { color: thema.color }]}>6</Text>
               </TouchableOpacity>
 
             </View>
@@ -216,55 +284,45 @@ export default function App() {
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 1])}
                 activeOpacity={.8}
-                style={styles.btn}>
+                style={[styles.btn, { backgroundColor: dark ? '#222' : '#fff' }]}>
 
-                <Text style={styles.txt_btn}>1</Text>
+                <Text style={[styles.txt_btn, { color: thema.color }]}>1</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 2])}
                 activeOpacity={.8}
-                style={styles.btn}>
-                <Text style={styles.txt_btn}>2</Text>
+                style={[styles.btn, { backgroundColor: dark ? '#222' : '#fff' }]}>
+                <Text style={[styles.txt_btn, { color: thema.color }]}>2</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 3])}
                 activeOpacity={.8}
-                style={styles.btn}>
+                style={[styles.btn, { backgroundColor: dark ? '#222' : '#fff' }]}>
 
-                <Text style={styles.txt_btn}>3</Text>
+                <Text style={[styles.txt_btn, { color: thema.color }]}>3</Text>
               </TouchableOpacity>
 
             </View>
 
             <View style={styles.lineCalc}>
-              <TouchableOpacity
-                onPress={() => {
-                  setDigito([])
-                  setParcelas([])
-                  setUltimo('')
-                }}
-                activeOpacity={.8}
-                style={styles.btn}>
-
-                <Text style={{ fontSize: 22, fontWeight: '500', color: '#222' }}>C</Text>
-              </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 0])}
                 activeOpacity={.8}
-                style={styles.btn}>
+                style={[styles.btn, { backgroundColor: dark ? '#222' : '#fff' }]}>
 
-                <Text style={styles.txt_btn}>0</Text>
+                <Text style={[styles.txt_btn, { color: thema.color }]}>0</Text>
               </TouchableOpacity>
+<View style={styles.btn}/>
 
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, '.'])}
                 activeOpacity={.8}
-                style={styles.btn}>
+                style={[styles.btn, { backgroundColor: dark ? '#222' : '#fff' }]}>
 
-                <Text style={styles.txt_btn}>,</Text>
+                <Text style={[styles.txt_btn, { color: thema.color }]}>,</Text>
               </TouchableOpacity>
 
             </View>
@@ -274,25 +332,37 @@ export default function App() {
           <View style={{ flex: 1, flexDirection: 'column' }}>
 
             <TouchableOpacity
-              onPress={() => setDigito([])}
-              activeOpacity={.8} style={[styles.btn, { flex: 1 }]}>
+              onPress={() => {
+                setDigito([])
+                setParcelas([])
+                setUltimo('')
+              }}
+              activeOpacity={.8}
+              style={[styles.btn, { backgroundColor: dark ? '#222' : '#fff' }]}>
 
-              <FontAwesome name='long-arrow-left' size={25} color='red' />
+              <Text style={{ fontSize: 22, fontWeight: '500', color: thema.color }}>C</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={apagarDigito}
+              activeOpacity={.8} style={styles.btn}>
+
+              <FontAwesome name='long-arrow-left' size={20} color={thema.especial} />
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={montaParcelas}
-              activeOpacity={.8} style={[styles.btn, { flex: 1 }]}>
+              activeOpacity={.8} style={styles.btn}>
 
-              <FontAwesome name='plus' size={25} color='red' />
+              <FontAwesome name='plus' size={20} color={thema.especial} />
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={Registrar}
               activeOpacity={.8}
-              style={[styles.btn, { flex: 2, }]}>
+              style={styles.btn}>
 
-              <FontAwesome name='check' size={25} color='red' />
+              <FontAwesome name='check' size={20} color={thema.especial} />
             </TouchableOpacity>
 
           </View>
@@ -306,56 +376,51 @@ const styles = StyleSheet.create({
 
   container: {
     flex: 1,
-    backgroundColor: '#fff'
   },
-  monitor: { flex: 1 },
+  separador: {
+    marginLeft: 15,
+    marginRight: 15
+  },
+  monitor: { flex: 1, justifyContent: 'space-between', elevation: 4, zIndex: 9999 },
 
   tec_topo: {
-    paddingHorizontal: 20, paddingVertical: 15, flexDirection: 'row', alignItems: 'center',
+    flexDirection: 'row',
   },
   flat_historico_itens: {
-    backgroundColor:'blue',
-    borderRadius: 5, flexDirection: 'row', alignItems: 'center', marginHorizontal: 5,
+    borderRadius: 5, flexDirection: 'row', alignItems: 'center', marginHorizontal: 20,
   },
-  valor_historico_item: { paddingHorizontal: 5 },
+  valor_historico_item: { fontSize: 18 },
 
   digito: {
-    paddingHorizontal: 20,
-    alignItems: "baseline",
+    fontSize: 80,
+    flexDirection: "row",
     alignSelf: 'flex-end',
-    flexDirection: 'row',
-    fontSize: 60,
-    fontWeight: '600',
-    color: '#222'
+    marginRight: 20,
+    marginLeft:50
   },
   lineCalc: {
     flexDirection: "row",
     justifyContent: 'space-around',
   },
   area_teclado: {
-    backgroundColor: '#fff',
-
-    borderTopRightRadius: 15,
-    borderTopLeftRadius: 15
+    paddingHorizontal: 15,
   },
-  teclado: { flexDirection: 'row', backgroundColor: '#fff' },
+  teclado: { flexDirection: 'row', marginBottom: 10 },
   btn: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
     height: width / 5,
+    elevation: 1,
     margin: .5,
-    borderRadius: 4
+
 
   },
   btn_especial: {
-    color: 'red',
     fontSize: 25
   },
   txt_btn: {
     fontSize: 25,
-    color: '#222',
     fontWeight: '600'
   }
 })
