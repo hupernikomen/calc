@@ -129,12 +129,6 @@ export default function Home() {
       }
     )
 
-    // Enviar Esses valores para Firebase
-    // setHistorico(historico => [...historico, {
-    //   soma: parcelas.length > 0 ? soma : parseFloat(ultimo),
-    //   time,
-    //   parcelas
-    // }])
 
 
     setParcelas([])
