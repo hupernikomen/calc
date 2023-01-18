@@ -5,6 +5,8 @@ import FontAwesome from 'react-native-vector-icons/FontAwesome'
 import Feather from 'react-native-vector-icons/Feather'
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons'
 
+import firebase from '@react-native-firebase/firestore';
+
 import { useNavigation } from '@react-navigation/native';
 
 const width = Dimensions.get('window').width
@@ -104,7 +106,7 @@ export default function Home() {
 
 
 
-  function Registrar() {
+  async function Registrar() {
     var soma = 0
 
 
@@ -118,6 +120,14 @@ export default function Home() {
     for (let i = 0; i < parcelas.length; i++) {
       soma += parseFloat(parcelas[i]);
     }
+
+    await firebase().collection('caixa').add(
+      {
+        soma: parcelas.length > 0 ? soma : parseFloat(ultimo),
+        time,
+        parcelas
+      }
+    )
 
     // Enviar Esses valores para Firebase
     // setHistorico(historico => [...historico, {
@@ -307,14 +317,14 @@ export default function Home() {
                 setUltimo('')
               }}
               activeOpacity={.8}
-              style={[styles.btn, { backgroundColor: dark ? '#222' : '#fff', flex:1 }]}>
+              style={[styles.btn, { backgroundColor: dark ? '#222' : '#fff', flex: 1 }]}>
 
               <Text style={{ fontSize: 22, fontWeight: '500', color: thema.color }}>C</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={incluirValor}
-              activeOpacity={.8} style={[styles.btn,{flex:1}]}>
+              activeOpacity={.8} style={[styles.btn, { flex: 1 }]}>
 
               <FontAwesome name='plus' size={20} color={thema.especial} />
             </TouchableOpacity>
@@ -322,7 +332,7 @@ export default function Home() {
             <TouchableOpacity
               onPress={Registrar}
               activeOpacity={.8}
-              style={[styles.btn,{flex:2}]}>
+              style={[styles.btn, { flex: 2 }]}>
 
               <FontAwesome name='check' size={20} color={thema.especial} />
             </TouchableOpacity>
