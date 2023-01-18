@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "940377409211",
+    "project_id": "calculadoracaixa",
+    "storage_bucket": "calculadoracaixa.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:940377409211:android:cea6a5a4584a0c3c7d8b9e",
+        "android_client_info": {
+          "package_name": "com.calc"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "940377409211-7qj88ikmmogqsed5lrjfmn8m7b0f8rem.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA8VYpGHvIWGhDv0lPC3Qmf4-d-A_b3Otg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "940377409211-7qj88ikmmogqsed5lrjfmn8m7b0f8rem.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
