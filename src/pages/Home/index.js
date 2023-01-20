@@ -1,18 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, FlatList, StyleSheet, Dimensions, StatusBar, Switch, TextInput, ScrollView } from 'react-native';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, Dimensions, StatusBar, TextInput } from 'react-native';
 
-import FontAwesome from 'react-native-vector-icons/FontAwesome'
 import Feather from 'react-native-vector-icons/Feather'
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons'
-
-import firebase from '@react-native-firebase/firestore';
+import firestore from '@react-native-firebase/firestore';
 
 import { useNavigation } from '@react-navigation/native';
 
 const width = Dimensions.get('window').width
-var listValRef;
 
 export default function Home() {
+  var listValRef;
 
   const navigation = useNavigation()
 
@@ -27,17 +24,16 @@ export default function Home() {
   useEffect(() => {
     if (dark) {
       setThema({
-        backgroundColor: "#222",
-        monitor: '#33333350',
-        color: '#fff',
-        especial: '#FF8C00'
+        backgroundColor: "#fff",
+        monitor: '#f1f1f180',
+        color: '#222',
+
       })
     } else {
       setThema({
-        backgroundColor: "#fff",
-        monitor: '#f1f1f150',
-        color: '#222',
-        especial: '#FF6347'
+        backgroundColor: "#333",
+        monitor: '#44444450',
+        color: '#fff',
       })
     }
   }, [dark])
@@ -46,52 +42,22 @@ export default function Home() {
     downButtonHandler()
     setUltimo(digito.join(''))
 
-
-    navigation.setOptions({
-      title: 'Calculadora Caixa',
-      headerTintColor: thema.color,
-      headerStyle: {
-        backgroundColor: thema.backgroundColor
-      },
-      headerRight: () =>
-        <View style={{ flexDirection: "row" }}>
-
-          <TouchableOpacity
-            onPress={() => setDark(!dark)}
-            style={{ marginRight: 20 }}
-          >
-            <MaterialIcons name={dark ? 'lightbulb-outline' : 'lightbulb'} size={22} color={thema.color} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Historico')}
-          >
-            <Feather name='align-right' size={22} color={thema.color} />
-          </TouchableOpacity>
-        </View>
-
-
-    })
-  })
-
-  useEffect(() => {
-
-    let s = 0
+    let valor = 0
     for (let i = 0; i < parcelas.length; i++) {
-      s += parseFloat(parcelas[i]);
+      valor += parseFloat(parcelas[i]);
     }
-    setSoma(s)
+    setSoma(valor)
+  }, [digito])
 
-  }, [parcelas])
 
   function deleteParcela(i) {
     const newParcelas = parcelas.filter((item, index) => index != i)
-
     setParcelas(newParcelas);
-
   }
 
 
   function incluirValor() {
+    if (!ultimo) return
 
     setParcelas(parcelas => [...parcelas, parseFloat(ultimo).toFixed(2)])
 
@@ -99,21 +65,21 @@ export default function Home() {
     setDigito([])
   }
 
-
   const downButtonHandler = () => {
     listValRef.scrollToEnd({ animated: true });
   };
 
-
-
   async function Registrar() {
     var soma = 0
 
-
     if (digito.length == 0 && parcelas.length == 0) return
-
+    const data = new Date()
     let time = {
-      data: new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" }),
+      data: {
+        dia: data.getDate(),
+        mes: data.getMonth() + 1,
+        ano: data.getFullYear(),
+      },
       hora: new Date().toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo" })
     }
 
@@ -121,19 +87,25 @@ export default function Home() {
       soma += parseFloat(parcelas[i]);
     }
 
-    await firebase().collection('caixa').add(
-      {
-        soma: parcelas.length > 0 ? soma : parseFloat(ultimo),
-        time,
-        parcelas
-      }
-    )
+    await firestore()
+      .collection('caixa')
+      .add(
+        {
+          soma: parcelas.length > 0 ? soma : parseFloat(ultimo),
+          time,
+          parcelas
+        }
+      )
+      .then(() => {
+        setParcelas([])
+        setUltimo('')
+        setDigito([])
 
+      })
+      .catch((err) => {
+        console.log(err);
+      })
 
-
-    setParcelas([])
-    setUltimo('')
-    setDigito([])
 
   }
 
@@ -148,62 +120,88 @@ export default function Home() {
       <View style={[styles.monitor, { backgroundColor: thema.monitor }]}>
 
 
-        <View style={{ width: 100, alignItems: 'flex-end', flexDirection: 'row' }}>
-
           <FlatList
-            showsVerticalScrollIndicator={false}
-            style={{ marginBottom: 15 }}
+            horizontal
+            showsHorizontalScrollIndicator={false}
             ref={(ref) => {
               listValRef = ref;
             }}
             data={parcelas}
             renderItem={({ item, index }) => {
               return (
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 15 }}>
+                <TouchableOpacity
+                  style={{flexDirection: 'row', justifyContent:'space-evenly', alignItems: "center", width:width/4 }}
+                  onPress={() => deleteParcela(index)}>
+
                   <Text style={[styles.valor_historico_item, { color: thema.color }]}>{item}</Text>
-                  <TouchableOpacity
-                    style={{ marginLeft: 15 }}
-                    onPress={() => deleteParcela(index)}
-                  >
-                    <Feather name='trash-2' color={thema.especial} size={20} />
-                  </TouchableOpacity>
-                </View>
+                  <Feather name='trash-2' color={'#FE0F3C'} size={20} />
+                </TouchableOpacity>
               )
             }}
-            ListFooterComponent={() => (
-              <TextInput
-                style={[styles.digito, { color: thema.color }]}
-                editable={false}
-                maxLength={5}
-                value={digito.length == 0 ? '0.00' : digito.join('').toString()} />
-            )}
           />
-        </View>
 
-        <TextInput
-          style={[styles.resultado, { color: thema.color }]}
-          editable={false}
-          maxLength={6}
-          value={soma.toFixed(2).toString()} />
+          <View style={{alignItems:"flex-end", paddingHorizontal:20}}>
+
+            <TextInput
+              style={[styles.digito, { color: thema.color, padding: 0 }]}
+              editable={false}
+              maxLength={5}
+              value={digito.length == 0 ? '' : digito.join('').toString()} />
+
+
+            <TextInput
+              style={[styles.resultado, { color: thema.color }]}
+              editable={false}
+              maxLength={6}
+              value={soma.toFixed(2).toString()} />
+          </View>
+
 
       </View>
 
 
       {/* ----------------- Teclado ------------------- */}
 
+      <View>
+        <View style={[styles.lineBtnsSup, { backgroundColor: thema.monitor, borderTopWidth: 5, borderTopColor: thema.backgroundColor }]}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Historico')}
+            activeOpacity={.8}
+            style={{ padding: 15 }}>
 
+            <Text style={{ color: thema.color }}>HISTÓRICO</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              setDigito([])
+              setParcelas([])
+              setUltimo('')
+            }}
+            activeOpacity={.8}
+            style={{ padding: 15 }}>
+            <Text style={{ color: thema.color }}>LIMPAR</Text>
+
+          </TouchableOpacity>
+
+        </View>
+      </View>
       <View style={[styles.area_teclado, { backgroundColor: thema.backgroundColor }]}>
 
 
         <View style={[styles.teclado, { backgroundColor: thema.backgroundColor }]}>
 
-          <View style={{ flex: 3 }}>
 
+          <View style={{ flex: 3, }}>
             <View style={styles.lineCalc}>
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 7])}
                 activeOpacity={.8}
-                style={[styles.btn, { backgroundColor: dark ? '#222' : '#fff' }]}>
+                style={[styles.btn,         { 
+                  backgroundColor: thema.backgroundColor,
+                  margin: .5,
+                  borderWidth:.5,
+                  borderColor:thema.monitor
+                  }]}>
 
                 <Text style={[[styles.txt_btn, { color: thema.color }], { color: thema.color }]}>7</Text>
               </TouchableOpacity>
@@ -211,7 +209,12 @@ export default function Home() {
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 8])}
                 activeOpacity={.8}
-                style={[styles.btn, { backgroundColor: dark ? '#222' : '#fff' }]}>
+                style={[styles.btn,         { 
+                  backgroundColor: thema.backgroundColor,
+                  margin: .5,
+                  borderWidth:.5,
+                  borderColor:thema.monitor
+                  }]}>
 
                 <Text style={[styles.txt_btn, { color: thema.color }]}>8</Text>
               </TouchableOpacity>
@@ -219,18 +222,27 @@ export default function Home() {
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 9])}
                 activeOpacity={.8}
-                style={[styles.btn, { backgroundColor: dark ? '#222' : '#fff' }]}>
+                style={[styles.btn,         { 
+                  backgroundColor: thema.backgroundColor,
+                  margin: .5,
+                  borderWidth:.5,
+                  borderColor:thema.monitor
+                  }]}>
 
                 <Text style={[styles.txt_btn, { color: thema.color }]}>9</Text>
               </TouchableOpacity>
-
             </View>
 
             <View style={styles.lineCalc}>
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 4])}
                 activeOpacity={.8}
-                style={[styles.btn, { backgroundColor: dark ? '#222' : '#fff' }]}>
+                style={[styles.btn,         { 
+                  backgroundColor: thema.backgroundColor,
+                  margin: .5,
+                  borderWidth:.5,
+                  borderColor:thema.monitor
+                  }]}>
 
                 <Text style={[styles.txt_btn, { color: thema.color }]}>4</Text>
               </TouchableOpacity>
@@ -238,7 +250,12 @@ export default function Home() {
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 5])}
                 activeOpacity={.8}
-                style={[styles.btn, { backgroundColor: dark ? '#222' : '#fff' }]}>
+                style={[styles.btn,         { 
+                  backgroundColor: thema.backgroundColor,
+                  margin: .5,
+                  borderWidth:.5,
+                  borderColor:thema.monitor
+                  }]}>
 
                 <Text style={[styles.txt_btn, { color: thema.color }]}>5</Text>
               </TouchableOpacity>
@@ -246,18 +263,27 @@ export default function Home() {
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 6])}
                 activeOpacity={.8}
-                style={[styles.btn, { backgroundColor: dark ? '#222' : '#fff' }]}>
+                style={[styles.btn,         { 
+                  backgroundColor: thema.backgroundColor,
+                  margin: .5,
+                  borderWidth:.5,
+                  borderColor:thema.monitor
+                  }]}>
 
                 <Text style={[styles.txt_btn, { color: thema.color }]}>6</Text>
               </TouchableOpacity>
-
             </View>
 
             <View style={styles.lineCalc}>
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 1])}
                 activeOpacity={.8}
-                style={[styles.btn, { backgroundColor: dark ? '#222' : '#fff' }]}>
+                style={[styles.btn,         { 
+                  backgroundColor: thema.backgroundColor,
+                  margin: .5,
+                  borderWidth:.5,
+                  borderColor:thema.monitor
+                  }]}>
 
                 <Text style={[styles.txt_btn, { color: thema.color }]}>1</Text>
               </TouchableOpacity>
@@ -265,72 +291,80 @@ export default function Home() {
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 2])}
                 activeOpacity={.8}
-                style={[styles.btn, { backgroundColor: dark ? '#222' : '#fff' }]}>
+                style={[styles.btn,         { 
+                  backgroundColor: thema.backgroundColor,
+                  margin: .5,
+                  borderWidth:.5,
+                  borderColor:thema.monitor
+                  }]}>
                 <Text style={[styles.txt_btn, { color: thema.color }]}>2</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 3])}
                 activeOpacity={.8}
-                style={[styles.btn, { backgroundColor: dark ? '#222' : '#fff' }]}>
+                style={[styles.btn,         { 
+                  backgroundColor: thema.backgroundColor,
+                  margin: .5,
+                  borderWidth:.5,
+                  borderColor:thema.monitor
+                  }]}>
 
                 <Text style={[styles.txt_btn, { color: thema.color }]}>3</Text>
               </TouchableOpacity>
-
             </View>
 
             <View style={styles.lineCalc}>
-
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 0])}
                 activeOpacity={.8}
-                style={[styles.btn, { backgroundColor: dark ? '#222' : '#fff' }]}>
+                style={[styles.btn,         { 
+                  backgroundColor: thema.backgroundColor,
+                  margin: .5,
+                  borderWidth:.5,
+                  borderColor:thema.monitor
+                  }]}>
 
                 <Text style={[styles.txt_btn, { color: thema.color }]}>0</Text>
               </TouchableOpacity>
+
+              {/* Vazio */}
               <View style={styles.btn} />
 
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, '.'])}
                 activeOpacity={.8}
-                style={[styles.btn, { backgroundColor: dark ? '#222' : '#fff' }]}>
+                style={[styles.btn,         { 
+                  backgroundColor: thema.backgroundColor,
+                  margin: .5,
+                  borderWidth:.5,
+                  borderColor:thema.monitor
+                  }]}>
 
                 <Text style={[styles.txt_btn, { color: thema.color }]}>,</Text>
               </TouchableOpacity>
-
             </View>
-
           </View>
 
-          <View style={{ flex: 1, flexDirection: 'column' }}>
+          <View style={{ flex: 1, flexDirection: 'column', backgroundColor: thema.monitor }}>
 
-            <TouchableOpacity
-              onPress={() => {
-                setDigito([])
-                setParcelas([])
-                setUltimo('')
-              }}
-              activeOpacity={.8}
-              style={[styles.btn, { backgroundColor: dark ? '#222' : '#fff', flex: 1 }]}>
 
-              <Text style={{ fontSize: 22, fontWeight: '500', color: thema.color }}>C</Text>
-            </TouchableOpacity>
 
             <TouchableOpacity
               onPress={incluirValor}
               activeOpacity={.8} style={[styles.btn, { flex: 1 }]}>
 
-              <FontAwesome name='plus' size={20} color={thema.especial} />
+              <Feather name='plus' size={28} color={thema.color} />
             </TouchableOpacity>
+
 
             <TouchableOpacity
               onPress={Registrar}
               activeOpacity={.8}
-              style={[styles.btn, { flex: 2 }]}>
+              style={[styles.btn, { flex: 3, backgroundColor: "green" }]}>
 
-              <FontAwesome name='check' size={20} color={thema.especial} />
+              <Feather name='save' size={28} color={thema.color} />
             </TouchableOpacity>
-
           </View>
         </View>
       </View>
@@ -345,18 +379,15 @@ const styles = StyleSheet.create({
   },
   monitor: {
     flex: 1,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between'
+    alignItems: 'flex-end'
   },
   resultado: {
-    alignSelf: 'flex-end',
     fontSize: 60,
-    fontWeight: '700'
+    fontWeight: '500',
+    alignSelf: "flex-end",
   },
   input_value: {
     flex: 1,
-    flexDirection: 'row',
     justifyContent: 'space-between'
   },
   valor_historico_item: {
@@ -364,23 +395,30 @@ const styles = StyleSheet.create({
   },
 
   digito: {
-    fontSize: 30,
-    flexDirection: "row",
+    fontSize: 18,
+  },
+
+  lineBtnsSup: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: "center",
+    paddingHorizontal: 25,
+    marginBottom: 5
   },
   lineCalc: {
     flexDirection: "row",
     justifyContent: 'space-around',
   },
   teclado: {
-    flexDirection: 'row'
+    flexDirection: 'row',
+    elevation: 10
   },
   btn: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    height: width / 5,
-    elevation: 1,
-    margin: 1,
+    height: width / 3.5,
+
   },
   btn_especial: {
     fontSize: 25

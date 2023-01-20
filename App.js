@@ -12,7 +12,7 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator>
-        <Stack.Screen name="Home" component={Home} />
+        <Stack.Screen options={{headerShown:false}} name="Home" component={Home} />
         <Stack.Screen options={{title:'Histórico'}} name="Historico" component={Historico} />
       </Stack.Navigator>
     </NavigationContainer>
