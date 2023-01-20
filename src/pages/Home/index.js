@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useLayoutEffect } from 'react';
-import { View, Text, TouchableOpacity, FlatList, StyleSheet, Dimensions, StatusBar, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, Dimensions, StatusBar, TextInput, ActivityIndicator } from 'react-native';
 
 import Feather from 'react-native-vector-icons/Feather'
 import firestore from '@react-native-firebase/firestore';
@@ -12,6 +12,8 @@ export default function Home() {
   var listValRef;
 
   const navigation = useNavigation()
+
+  const [load, setLoad] = useState(false)
 
   const [digito, setDigito] = useState([])
   const [ultimo, setUltimo] = useState(0)
@@ -39,14 +41,16 @@ export default function Home() {
   }, [dark])
 
   useEffect(() => {
-    downButtonHandler()
-    setUltimo(digito.join(''))
 
+    setUltimo(digito.join(''))
+    console.log(ultimo);
+    
     let valor = 0
     for (let i = 0; i < parcelas.length; i++) {
       valor += parseFloat(parcelas[i]);
     }
     setSoma(valor)
+    downButtonHandler()
   }, [digito])
 
 
@@ -87,6 +91,7 @@ export default function Home() {
       soma += parseFloat(parcelas[i]);
     }
 
+    setLoad(true)
     await firestore()
       .collection('caixa')
       .add(
@@ -100,10 +105,12 @@ export default function Home() {
         setParcelas([])
         setUltimo('')
         setDigito([])
+        setLoad(false)
 
       })
       .catch((err) => {
         console.log(err);
+        setLoad(false)
       })
 
 
@@ -113,48 +120,50 @@ export default function Home() {
   return (
     <View style={[styles.container, { backgroundColor: thema.backgroundColor }]}>
 
-      <StatusBar barStyle={!dark ? 'dark-content' : 'light-content'} backgroundColor={thema.backgroundColor} />
+      <StatusBar barStyle={dark ? 'dark-content' : 'light-content'} backgroundColor={thema.backgroundColor} />
 
       {/* ----------------- Monitor ------------------- */}
 
       <View style={[styles.monitor, { backgroundColor: thema.monitor }]}>
 
 
-          <FlatList
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            ref={(ref) => {
-              listValRef = ref;
-            }}
-            data={parcelas}
-            renderItem={({ item, index }) => {
-              return (
-                <TouchableOpacity
-                  style={{flexDirection: 'row', justifyContent:'space-evenly', alignItems: "center", width:width/4 }}
-                  onPress={() => deleteParcela(index)}>
+        <FlatList
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          ref={(ref) => {
+            listValRef = ref;
+          }}
+          data={parcelas}
+          renderItem={({ item, index }) => {
+            return (
+              <TouchableOpacity
+                style={{ flexDirection: 'row', justifyContent: 'space-evenly', alignItems: "center", width: width / 4 }}
+                onPress={() => deleteParcela(index)}>
 
-                  <Text style={[styles.valor_historico_item, { color: thema.color }]}>{item}</Text>
-                  <Feather name='trash-2' color={'#FE0F3C'} size={20} />
-                </TouchableOpacity>
-              )
-            }}
-          />
+                <Text style={[styles.valor_historico_item, { color: thema.color }]}>{item}</Text>
+                <Feather name='trash-2' color={'#FE0F3C'} size={20} />
+              </TouchableOpacity>
+            )
+          }}
+        />
 
-          <View style={{alignItems:"flex-end", paddingHorizontal:20}}>
+        <View style={{ alignItems: "flex-end", paddingHorizontal: 20 }}>
 
-            <TextInput
-              style={[styles.digito, { color: thema.color, padding: 0 }]}
-              editable={false}
-              maxLength={5}
-              value={digito.length == 0 ? '' : digito.join('').toString()} />
+          <TextInput
+            style={[styles.digito, { color: thema.color, padding: 0, textAlign: 'right', marginRight: 10 }]}
+            editable={false}
+            maxLength={5}
+            value={digito.length == 0 ? '' : digito.join('').toString()} />
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
 
-
+            <Text style={{ color: '#aaa', fontSize: 30, marginRight: 10 }}>=</Text>
             <TextInput
               style={[styles.resultado, { color: thema.color }]}
               editable={false}
               maxLength={6}
               value={soma.toFixed(2).toString()} />
           </View>
+        </View>
 
 
       </View>
@@ -196,12 +205,12 @@ export default function Home() {
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 7])}
                 activeOpacity={.8}
-                style={[styles.btn,         { 
+                style={[styles.btn, {
                   backgroundColor: thema.backgroundColor,
                   margin: .5,
-                  borderWidth:.5,
-                  borderColor:thema.monitor
-                  }]}>
+                  borderWidth: .5,
+                  borderColor: thema.monitor
+                }]}>
 
                 <Text style={[[styles.txt_btn, { color: thema.color }], { color: thema.color }]}>7</Text>
               </TouchableOpacity>
@@ -209,12 +218,12 @@ export default function Home() {
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 8])}
                 activeOpacity={.8}
-                style={[styles.btn,         { 
+                style={[styles.btn, {
                   backgroundColor: thema.backgroundColor,
                   margin: .5,
-                  borderWidth:.5,
-                  borderColor:thema.monitor
-                  }]}>
+                  borderWidth: .5,
+                  borderColor: thema.monitor
+                }]}>
 
                 <Text style={[styles.txt_btn, { color: thema.color }]}>8</Text>
               </TouchableOpacity>
@@ -222,12 +231,12 @@ export default function Home() {
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 9])}
                 activeOpacity={.8}
-                style={[styles.btn,         { 
+                style={[styles.btn, {
                   backgroundColor: thema.backgroundColor,
                   margin: .5,
-                  borderWidth:.5,
-                  borderColor:thema.monitor
-                  }]}>
+                  borderWidth: .5,
+                  borderColor: thema.monitor
+                }]}>
 
                 <Text style={[styles.txt_btn, { color: thema.color }]}>9</Text>
               </TouchableOpacity>
@@ -237,12 +246,12 @@ export default function Home() {
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 4])}
                 activeOpacity={.8}
-                style={[styles.btn,         { 
+                style={[styles.btn, {
                   backgroundColor: thema.backgroundColor,
                   margin: .5,
-                  borderWidth:.5,
-                  borderColor:thema.monitor
-                  }]}>
+                  borderWidth: .5,
+                  borderColor: thema.monitor
+                }]}>
 
                 <Text style={[styles.txt_btn, { color: thema.color }]}>4</Text>
               </TouchableOpacity>
@@ -250,12 +259,12 @@ export default function Home() {
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 5])}
                 activeOpacity={.8}
-                style={[styles.btn,         { 
+                style={[styles.btn, {
                   backgroundColor: thema.backgroundColor,
                   margin: .5,
-                  borderWidth:.5,
-                  borderColor:thema.monitor
-                  }]}>
+                  borderWidth: .5,
+                  borderColor: thema.monitor
+                }]}>
 
                 <Text style={[styles.txt_btn, { color: thema.color }]}>5</Text>
               </TouchableOpacity>
@@ -263,12 +272,12 @@ export default function Home() {
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 6])}
                 activeOpacity={.8}
-                style={[styles.btn,         { 
+                style={[styles.btn, {
                   backgroundColor: thema.backgroundColor,
                   margin: .5,
-                  borderWidth:.5,
-                  borderColor:thema.monitor
-                  }]}>
+                  borderWidth: .5,
+                  borderColor: thema.monitor
+                }]}>
 
                 <Text style={[styles.txt_btn, { color: thema.color }]}>6</Text>
               </TouchableOpacity>
@@ -278,12 +287,12 @@ export default function Home() {
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 1])}
                 activeOpacity={.8}
-                style={[styles.btn,         { 
+                style={[styles.btn, {
                   backgroundColor: thema.backgroundColor,
                   margin: .5,
-                  borderWidth:.5,
-                  borderColor:thema.monitor
-                  }]}>
+                  borderWidth: .5,
+                  borderColor: thema.monitor
+                }]}>
 
                 <Text style={[styles.txt_btn, { color: thema.color }]}>1</Text>
               </TouchableOpacity>
@@ -291,24 +300,24 @@ export default function Home() {
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 2])}
                 activeOpacity={.8}
-                style={[styles.btn,         { 
+                style={[styles.btn, {
                   backgroundColor: thema.backgroundColor,
                   margin: .5,
-                  borderWidth:.5,
-                  borderColor:thema.monitor
-                  }]}>
+                  borderWidth: .5,
+                  borderColor: thema.monitor
+                }]}>
                 <Text style={[styles.txt_btn, { color: thema.color }]}>2</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 3])}
                 activeOpacity={.8}
-                style={[styles.btn,         { 
+                style={[styles.btn, {
                   backgroundColor: thema.backgroundColor,
                   margin: .5,
-                  borderWidth:.5,
-                  borderColor:thema.monitor
-                  }]}>
+                  borderWidth: .5,
+                  borderColor: thema.monitor
+                }]}>
 
                 <Text style={[styles.txt_btn, { color: thema.color }]}>3</Text>
               </TouchableOpacity>
@@ -318,12 +327,12 @@ export default function Home() {
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, 0])}
                 activeOpacity={.8}
-                style={[styles.btn,         { 
+                style={[styles.btn, {
                   backgroundColor: thema.backgroundColor,
                   margin: .5,
-                  borderWidth:.5,
-                  borderColor:thema.monitor
-                  }]}>
+                  borderWidth: .5,
+                  borderColor: thema.monitor
+                }]}>
 
                 <Text style={[styles.txt_btn, { color: thema.color }]}>0</Text>
               </TouchableOpacity>
@@ -334,12 +343,12 @@ export default function Home() {
               <TouchableOpacity
                 onPress={() => setDigito(digito => [...digito, '.'])}
                 activeOpacity={.8}
-                style={[styles.btn,         { 
+                style={[styles.btn, {
                   backgroundColor: thema.backgroundColor,
                   margin: .5,
-                  borderWidth:.5,
-                  borderColor:thema.monitor
-                  }]}>
+                  borderWidth: .5,
+                  borderColor: thema.monitor
+                }]}>
 
                 <Text style={[styles.txt_btn, { color: thema.color }]}>,</Text>
               </TouchableOpacity>
@@ -358,13 +367,22 @@ export default function Home() {
             </TouchableOpacity>
 
 
-            <TouchableOpacity
+            <View style={{ backgroundColor: "green", flex: 3 }}>
+
+              {load ?
+              <View style={{ flex: 1, alignItems: 'center', justifyContent: "center" }}>
+              <ActivityIndicator size={28} color={'#fff'} /> 
+                </View>
+                :
+              <TouchableOpacity
               onPress={Registrar}
               activeOpacity={.8}
-              style={[styles.btn, { flex: 3, backgroundColor: "green" }]}>
+                style={{ marginVertical: 30, flex: 1, alignItems: 'center', justifyContent: "center" }}>
 
-              <Feather name='save' size={28} color={thema.color} />
-            </TouchableOpacity>
+                  <Feather name='save' size={28} color={thema.color} />
+              </TouchableOpacity>
+                }
+            </View>
           </View>
         </View>
       </View>
@@ -395,7 +413,8 @@ const styles = StyleSheet.create({
   },
 
   digito: {
-    fontSize: 18,
+    fontSize: 22,
+    marginBottom: -15
   },
 
   lineBtnsSup: {
@@ -417,7 +436,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    height: width / 3.5,
+    height: width / 3.8,
 
   },
   btn_especial: {
